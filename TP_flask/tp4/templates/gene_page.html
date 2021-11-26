@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    </head>
+    <body> 
+        <h1>{{ gene_data["name"] }}</h1> 
+        <table>
+            <thead>
+                <tr>
+                    <th colspan="2">Gene Info</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><b>Gene ID</b></td>
+                    <td>{{ gene_data["id"] }}</td>
+                </tr>
+                <tr>
+                    <td><b>Chromosome</b></td>
+                    <td>{{ gene_data["chr"] }}</td>
+                </tr>
+                <tr>
+                    <td><b>Band</b></td>
+                    <td>{{ gene_data["band"] }}</td>                    
+                </tr>
+                <tr>
+                    <td><b>Strand</b></td>
+                    <td>{{ gene_data["strand"] }}</td>
+                </tr>
+                <tr>
+                    <td><b>Gene start</b></td>
+                    <td>{{ gene_data["gene_start"] }}</td>
+                </tr>
+                <tr>
+                    <td><b>Gene end</b></td>
+                    <td>{{ gene_data["gene_end"] }}</td>
+                </tr>
+                <tr>
+                    <td><b>Transcript count</b></td>
+                    <td>{{ gene_data["count"] }}</td>
+                </tr>
+            </tbody>
+        </table>    
+        <table>
+            <thead>
+                <tr>
+                    <th colspan="3">List of transcripts</th>
+                </tr>
+            </thead>
+            <tr>
+                <td><b>ID</b></td>
+                <td><b>Start</b></td>
+                <td><b>End</b></td>
+            </tr>
+            {% for transcript in data_transcript %}
+            <tr> 
+                <td>{{ transcript[0] }}</td>            
+                <td>{{ transcript[1] }}</td>
+                <td>{{ transcript[2] }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+        <table>
+            <thead>
+                <tr>
+                    <th colspan="3">List of parts</th>
+                </tr>
+            </thead>
+            <tr>
+                <td><b>Part</b></td>
+            </tr>
+            {% for part in data_part %}
+            <tr> 
+                <td>{{ part }}</td>            
+            </tr>
+            {% endfor %}
+        </table>
+    </body>
+</html>

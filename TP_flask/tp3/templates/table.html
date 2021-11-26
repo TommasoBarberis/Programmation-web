@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<head>
+    <style>
+        table {
+          font-family: arial, sans-serif;
+          border-collapse: collapse;
+          width: 100%;
+        }
+        
+        td {
+          border: 1px solid #dddddd;
+          text-align: left;
+          padding: 8px;
+        }
+
+        th {
+            border: 1px solid #dddddd;
+            text-align: center;
+            padding: 12px;
+            font-size: 30px;
+        }
+        
+        tr:nth-child(even) {
+          background-color: #dddddd;
+        }
+        </style>
+</head>
+<body>  
+    <p>{{debug}}</p>
+    <p>Vos données ont bien été prises en compte</p>
+    <table>
+        <thead>
+            <tr>
+                <th colspan="2">Submit form</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Name</td>
+                <td>{{name}}</td>
+            </tr>
+            <tr>
+                <td>Surname</td>
+                <td>{{surname}}</td>
+            </tr>
+            <tr>
+                <td>Sex</td>
+                <td>{{sex}}</td>
+            </tr>
+        </tbody>
+    </table>
+    
+</body>

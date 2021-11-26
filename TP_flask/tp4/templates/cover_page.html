@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<head>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>  
+    <table>
+        <thead>
+            <tr>
+                <th colspan="2">atlas organism part</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in atlas_list %}
+            <tr>
+                <td>
+                    <a href="{{ url_for('genes_by_part', part=item[0]) }}">{{ item[0] }}</a>
+                </td>            
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+</body>
