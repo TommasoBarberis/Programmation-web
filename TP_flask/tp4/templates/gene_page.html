@@ -76,5 +76,8 @@
             </tr>
             {% endfor %}
         </table>
+        <center>
+            <img src="{{ url_for('build_hist', gene_id=gene_data['id']) }}"/>
+        </center>
     </body>
 </html>

@@ -1,8 +1,13 @@
-from flask import Flask, render_template
-import sqlite3, os
+from flask import Flask, render_template, make_response, abort, jsonify, request, url_for
+import os
+import matplotlib.pyplot as plt
+from io import BytesIO
+from utils import *
+import json
 
 app = Flask(__name__, template_folder="tp4/templates", static_folder="tp4/static")
 app_dir = os.getcwd()
+
 db_ensembl = "tp4/data/ensembl_hs63_simple.sqlite"
 
 @app.route("/")
@@ -19,103 +24,93 @@ def genes_by_part(part):
 def gene_page(gene_id):
     gene_data = get_gene_data(db_ensembl, gene_id)
     data_transcript = get_transcipts_data(db_ensembl, gene_id)
-    data_part = []
-    for transcript in data_transcript:
-        transcript_id = transcript[0]
-        new_part = get_part(db_ensembl, transcript_id)
-        data_part.append(new_part)
+    data_part = get_part_by_gene(db_ensembl, gene_id)
     return render_template("gene_page.html", gene_data=gene_data, data_transcript=data_transcript, data_part=data_part)
 
-def get_atlas(db):            
-    with sqlite3.connect(db) as conn:
-        cur = conn.cursor()
-        cur.execute('SELECT DISTINCT atlas_organism_part FROM Expression WHERE atlas_organism_part != "None" ORDER BY atlas_organism_part ')
-        return cur.fetchall()
+@app.route("/genes/<gene_id>/parts.png")
+def build_hist(gene_id):
+    data_part = get_part_by_gene(db_ensembl, gene_id)
+    count_dict = {}
 
-def get_genes(db, part):
-     with sqlite3.connect(db) as conn:
-        cur = conn.cursor()
-        cur.execute("""
-        SELECT DISTINCT g.ensembl_gene_id, associated_gene_name
-            FROM Genes as g
-            NATURAL JOIN Transcripts as t
-            NATURAL JOIN Expression as e
-            WHERE atlas_organism_part = '{part}'
-            ORDER BY g.ensembl_gene_id""".format(part=part))
-        return cur.fetchall()     
+    for part in data_part:
+        transcript_count = get_transcipts_count(db_ensembl, gene_id, part)
+        count_dict[part] = transcript_count[0][0]
+
+    bins = list(count_dict.keys())
+    values = list(count_dict.values())
+
+    fig, ax = plt.subplots()  
+    ax = plt.bar(bins, values)
+    fig.autofmt_xdate(rotation=45)
+    fig.tight_layout()
+
+
+    b = BytesIO()
+    fig.savefig(b, format="png")
+
+    # fig.savefig("/TP_flask/tp4/tmp/hist.png", format="png")
+
+    resp = make_response(b.getvalue())
+    resp.headers['content-type'] = 'image/png'
+    return resp
+
+@app.route("/api/genes/<gene_id>", methods=["GET"])
+def gene_json(gene_id):
+    try:
+        gene = unwrap_gene(gene_id)
+        transcripts_array = unwrap_transcript(db_ensembl, gene_id)
+        gene["transcripts"] = transcripts_array
+        return jsonify(gene), 200
+    except:
+        error = {"error": "Ce gène n'existe pas"}          
+        return jsonify(error), 404        
         
-def get_gene_data(db, gene_id):
-    gene_dict = {}
-    with sqlite3.connect(db) as conn:
-        cur = conn.cursor()
 
-        cur.execute("""
-        SELECT DISTINCT ensembl_gene_id FROM Genes
-            WHERE Ensembl_Gene_id = '{gene_id}'
-        """.format(gene_id=gene_id))
-        gene_dict["id"] = cur.fetchall()[0][0]
+@app.route("/api/genes/", methods=["GET"])
+def genes_list():
+    all_genes = get_all_genes(db_ensembl)
+    offset = request.args.get('offset')
+    if offset:
+        all_genes = all_genes[int(offset):]
+    try:
+        all_genes = all_genes[:100]
+    except:
+        pass
+    
+    gene_list = []
+    for gene in all_genes:
+        gene_id = gene[0]
+        gene_dict = unwrap_gene(db_ensembl, gene_id)
+        transcripts_array = unwrap_transcript(db_ensembl, gene_id)
+        gene_dict["transcript_count"] = int(len(transcripts_array))
+        gene_dict["href"] = url_for("gene_json", gene_id=gene_id)
+        gene_list.append(gene_dict)
 
-        cur.execute("""
-        SELECT DISTINCT chromosome_name FROM Genes
-            WHERE Ensembl_Gene_id = '{gene_id}'
-        """.format(gene_id=gene_id))
-        gene_dict["chr"] = cur.fetchall()[0][0]
+    return jsonify(gene_list), 
 
-        cur.execute("""
-        SELECT DISTINCT band FROM Genes
-            WHERE Ensembl_Gene_id = '{gene_id}'
-        """.format(gene_id=gene_id))
-        gene_dict["band"] = cur.fetchall()[0][0]
+@app.route("/api/genes/", methods=["POST"])
+def gene_post():
+    req = request.get_json()
+    keys = [  "Ensembl_Gene_ID", "Associated_Gene_Name", "Chromosome_Name", "Band", "Strand", "Gene_End", "Gene_Start"]
+    for key in req.keys():
+        if key in keys:
+            pass
+        else:
+            error = {"error": "la clé {key} n'existe pas".format(key=key)}          
+            return jsonify(error), 404 
 
-        cur.execute("""
-        SELECT DISTINCT strand FROM Genes
-            WHERE Ensembl_Gene_id = '{gene_id}'
-        """.format(gene_id=gene_id))
-        gene_dict["strand"] = cur.fetchall()[0][0]
+    # try:
+    # if type(req["Ensembl_Gene_ID"]) == str and type(req["Chromosome_Name"]) == str and type(req["Band"]) == str and type(req["Associated_Gene_Name"]) == str:
+    #         pass
+    #     if type(req["Gene_Start"]) == int and type(req["Gene_End"]) == int and type(req["Strand"]) == int:
+    #         pass
+        
+        
 
-        cur.execute("""
-        SELECT DISTINCT gene_start FROM Genes
-            WHERE Ensembl_Gene_id = '{gene_id}'
-        """.format(gene_id=gene_id))
-        gene_dict["gene_start"] = cur.fetchall()[0][0]
+    # except:
+    #     error = {"error": "Ce gène n'existe pas"}          
+    #     return jsonify(error), 404 
 
-        cur.execute("""
-        SELECT DISTINCT gene_end FROM Genes
-            WHERE Ensembl_Gene_id = '{gene_id}'
-        """.format(gene_id=gene_id))
-        gene_dict["gene_end"] = cur.fetchall()[0][0]
-
-        cur.execute("""
-        SELECT DISTINCT associated_gene_name FROM Genes
-            WHERE Ensembl_Gene_id = '{gene_id}'
-        """.format(gene_id=gene_id))
-        gene_dict["name"] = cur.fetchall()[0][0]
-
-        cur.execute("""
-        SELECT DISTINCT transcript_count FROM Genes
-            WHERE Ensembl_Gene_id = '{gene_id}'
-        """.format(gene_id=gene_id))
-        gene_dict["count"] = cur.fetchall()[0][0]
-
-    return gene_dict
-
-def get_transcipts_data(db, gene_id):
-    transcript_dict = {}
-    with sqlite3.connect(db) as conn:
-        cur = conn.cursor()
-
-        cur.execute("""
-        SELECT DISTINCT ensembl_transcript_id, transcript_start, transcript_end FROM Transcripts
-            WHERE Ensembl_Gene_id = '{gene_id}'
-        """.format(gene_id=gene_id))
-    return cur.fetchall()
-
-def get_part(db, transcript_id):
-    with sqlite3.connect(db) as conn:
-        cur = conn.cursor()
-
-        cur.execute("""
-        SELECT DISTINCT atlas_organism_part FROM Expression
-            WHERE Ensembl_Transcript_id = '{transcript_id}'
-        """.format(transcript_id=transcript_id))
-    return cur.fetchall()    
+    # print(req)
+    return str("test")
+    
