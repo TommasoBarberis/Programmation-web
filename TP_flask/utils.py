@@ -132,13 +132,9 @@ def get_all_genes(db):
 
 def unwrap_gene(db, gene_id):
     gene = get_gene_data(db, gene_id)
-   
-    
-
     gene = {"Ensembl_Gene_ID": gene["id"], "Associated_Gene_Name": gene["name"], \
     "Chromosome_Name": gene["chr"], "Band": gene["band"], "Strand": gene["strand"], \
     "Gene_End": gene["gene_end"], "Gene_Start": gene["gene_end"]}
-    
     return gene
 
 def unwrap_transcript(db, gene_id):

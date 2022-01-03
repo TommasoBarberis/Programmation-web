@@ -57,12 +57,12 @@ def build_hist(gene_id):
 @app.route("/api/genes/<gene_id>", methods=["GET"])
 def gene_json(gene_id):
     try:
-        gene = unwrap_gene(gene_id)
+        gene = unwrap_gene(db_ensembl, gene_id)
         transcripts_array = unwrap_transcript(db_ensembl, gene_id)
         gene["transcripts"] = transcripts_array
         return jsonify(gene), 200
     except:
-        error = {"error": "Ce gène n'existe pas"}          
+        error = {"error": "This gene doesn't exist in the database."}          
         return jsonify(error), 404        
         
 
@@ -89,15 +89,16 @@ def genes_list():
     return jsonify(gene_list)
 
 @app.route("/api/genes/", methods=["POST"])
+# curl -X POST -H "Content-Type: application/json" -d @test.json http://127.0.0.1:5000/api/genes/
 def gene_post():
     req = request.get_json()
-    keys = [  "Ensembl_Gene_ID", "Associated_Gene_Name", "Chromosome_Name", "Band", "Strand", "Gene_End", "Gene_Start"]
+    keys = ["Ensembl_Gene_ID", "Associated_Gene_Name", "Chromosome_Name", "Band", "Strand", "Gene_End", "Gene_Start"]
     for key in req.keys():
         if key in keys:
             pass
         else:
             error = {"error": "la clé {key} n'existe pas".format(key=key)}          
-            return jsonify(error), 404 
+            return jsonify(error), 400
 
     # try:
     # if type(req["Ensembl_Gene_ID"]) == str and type(req["Chromosome_Name"]) == str and type(req["Band"]) == str and type(req["Associated_Gene_Name"]) == str:
