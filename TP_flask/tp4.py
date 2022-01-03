@@ -86,7 +86,7 @@ def genes_list():
         gene_dict["href"] = url_for("gene_json", gene_id=gene_id)
         gene_list.append(gene_dict)
 
-    return jsonify(gene_list), 
+    return jsonify(gene_list)
 
 @app.route("/api/genes/", methods=["POST"])
 def gene_post():
